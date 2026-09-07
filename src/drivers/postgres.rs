@@ -19,11 +19,11 @@ impl PostgresDriver {
 }
 
 impl Driver for PostgresDriver {
-    fn get_tables_query() -> &'static str {
+    fn get_tables_query(&self) -> &'static str {
         "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
     }
 
-    fn get_databases_query() -> &'static str {
+    fn get_databases_query(&self) -> &'static str {
         "SELECT \
             datname AS \"name\", \
             pg_get_userbyid(datdba) AS \"owner\", \
@@ -54,7 +54,7 @@ impl Driver for PostgresDriver {
         })
     }
 
-    fn name() -> &'static str {
+    fn name(&self) -> &'static str {
         "postgres"
     }
 

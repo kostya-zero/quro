@@ -87,11 +87,11 @@ impl SqliteDriver {
 }
 
 impl Driver for SqliteDriver {
-    fn get_tables_query() -> &'static str {
+    fn get_tables_query(&self) -> &'static str {
         "SELECT name FROM sqlite_master WHERE type='table'"
     }
 
-    fn get_databases_query() -> &'static str {
+    fn get_databases_query(&self) -> &'static str {
         "PRAGMA database_list"
     }
 
@@ -99,7 +99,7 @@ impl Driver for SqliteDriver {
         self.execute_query_with("SELECT * FROM pragma_table_info(?1)", [table])
     }
 
-    fn name() -> &'static str {
+    fn name(&self) -> &'static str {
         "sqlite"
     }
 

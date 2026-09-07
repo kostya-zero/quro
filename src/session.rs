@@ -18,8 +18,8 @@ use crate::{
     terminal::{escape_control_chars, print_error},
 };
 
-pub struct Session<D> {
-    driver: D,
+pub struct Session {
+    driver: Box<dyn Driver>,
 }
 
 #[derive(Debug)]
@@ -62,11 +62,8 @@ impl FromStr for Command {
     }
 }
 
-impl<D> Session<D>
-where
-    D: Driver,
-{
-    pub fn new(driver: D) -> Self {
+impl Session {
+    pub fn new(driver: Box<dyn Driver>) -> Self {
         Self { driver }
     }
 
@@ -77,9 +74,9 @@ where
         match cmd {
             Command::Version => println!("{}", env!("CARGO_PKG_VERSION")),
             Command::Exit => return Err(SessionError::Exit),
-            Command::Tables => self.execute_query(D::get_tables_query()),
-            Command::Db => self.execute_query(D::get_databases_query()),
-            Command::Driver => println!("{}", D::name()),
+            Command::Tables => self.execute_query(self.driver.get_databases_query()),
+            Command::Db => self.execute_query(self.driver.get_databases_query()),
+            Command::Driver => println!("{}", self.driver.name()),
             Command::Schema => {
                 let table = parts
                     .next()
@@ -167,7 +164,11 @@ where
     pub fn run_repl(&mut self) -> Result<()> {
         let mut rl = DefaultEditor::new()?;
 
-        let welcome_header = format!("Quro v{} · {}", env!("CARGO_PKG_VERSION"), D::name());
+        let welcome_header = format!(
+            "Quro v{} · {}",
+            env!("CARGO_PKG_VERSION"),
+            self.driver.name()
+        );
 
         println!("{}", welcome_header.blue().bold());
         println!("{}", "Use '.help' to see available commands.".dimmed());

@@ -1,5 +1,7 @@
 use clap::{ArgAction, Parser};
 
+use crate::drivers::DriverKind;
+
 /// A command-line query runner.
 #[derive(Parser)]
 #[command(
@@ -9,13 +11,13 @@ use clap::{ArgAction, Parser};
 
 )]
 pub struct Cli {
-    /// A database URL that QRY had to connect to.
+    /// A database URL that Quro had to connect to.
     pub database_url: Option<String>,
 
     /// A driver to use. Usually determined from database URL,
     /// but can be specified explicitly.
     #[arg(short, long)]
-    pub driver: Option<String>,
+    pub driver: Option<DriverKind>,
 
     /// Execute a specified query instead of launching REPL.
     #[arg(short, long)]

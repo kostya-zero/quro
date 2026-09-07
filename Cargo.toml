@@ -19,7 +19,7 @@ postgres-native-tls = "0.5.2"
 native-tls = { version = "0.2.18", features = ["vendored"] }
 rusqlite = { version = "0.40.1", features = ["bundled"] }
 rustyline = "18.0.1"
-tabled = { version = "0.21.0", features = ["ansi"] }
+tabled = { version = "0.22.0", features = ["ansi"] }
 thiserror = "2.0.19"
 
 [profile.release]
