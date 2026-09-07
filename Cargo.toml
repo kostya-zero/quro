@@ -1,14 +1,17 @@
 [package]
 name = "quro"
 description = "A CLI query runner with support for multiple databases."
-authors = ["Konstantin Zhigaylo <zero@kostyazero.com>"]
+authors = ["Konstantin Zhigaylo <kostyazero@proton.me>"]
 repository = "https://github.com/kostya-zero/quro"
 homepage = "https://github.com/kostya-zero/quro"
 keywords = ["database", "cli", "sql"]
 readme = "README.md"
 license = "MIT"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2024"
+
+[profile.dev]
+debug = "line-tables-only"
 
 [dependencies]
 anyhow = "1.0.104"
