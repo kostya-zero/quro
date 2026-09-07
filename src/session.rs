@@ -40,9 +40,6 @@ pub enum SessionError {
 
     #[error("{0}")]
     CommandError(String),
-
-    #[error("exit")]
-    Exit,
 }
 
 impl FromStr for Command {
@@ -67,13 +64,13 @@ impl Session {
         Self { driver }
     }
 
-    fn execute_internal_command(&mut self, command: &str) -> Result<(), SessionError> {
+    fn execute_internal_command(&mut self, command: &str) -> Result<bool, SessionError> {
         let mut parts = command.splitn(2, ' ');
         let cmd = Command::from_str(parts.next().unwrap())
             .map_err(|_| SessionError::CommandNotFound(command.to_string()))?;
         match cmd {
             Command::Version => println!("{}", env!("CARGO_PKG_VERSION")),
-            Command::Exit => return Err(SessionError::Exit),
+            Command::Exit => return Ok(true),
             Command::Tables => self.execute_query(self.driver.get_tables_query()),
             Command::Db => self.execute_query(self.driver.get_databases_query()),
             Command::Driver => println!("{}", self.driver.name()),
@@ -112,7 +109,7 @@ impl Session {
             }
         }
 
-        Ok(())
+        Ok(false)
     }
 
     pub fn render_table(&self, data: QueryOutput) {
@@ -131,7 +128,6 @@ impl Session {
         );
         t.with(Style::rounded())
             .with(BorderColor::filled(Color::FG_BRIGHT_BLACK));
-        t.with(BorderColor::filled(Color::FG_BRIGHT_BLACK));
 
         t.modify(Rows::new(1..), BorderColor::filled(Color::FG_BRIGHT_BLACK));
         t.modify(
@@ -189,9 +185,12 @@ impl Session {
 
                     if trimmed.starts_with('.') {
                         match self.execute_internal_command(trimmed) {
-                            Err(SessionError::Exit) => break,
                             Err(error) => print_error(&error.to_string()),
-                            Ok(()) => {}
+                            Ok(is_exit) => {
+                                if is_exit {
+                                    return Ok(());
+                                }
+                            }
                         }
                         continue;
                     }
