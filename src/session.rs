@@ -74,7 +74,7 @@ impl Session {
         match cmd {
             Command::Version => println!("{}", env!("CARGO_PKG_VERSION")),
             Command::Exit => return Err(SessionError::Exit),
-            Command::Tables => self.execute_query(self.driver.get_databases_query()),
+            Command::Tables => self.execute_query(self.driver.get_tables_query()),
             Command::Db => self.execute_query(self.driver.get_databases_query()),
             Command::Driver => println!("{}", self.driver.name()),
             Command::Schema => {
@@ -156,8 +156,10 @@ impl Session {
                     self.render_table(data);
                 }
             }
-            // TODO: Find a way to print error message without 'Caused By'.
-            Err(error) => print_error(&format!("database error: {error:?}")),
+            Err(error) => print_error(&format!(
+                "database error: {}",
+                format_database_error(&error)
+            )),
         }
     }
 
@@ -224,4 +226,15 @@ impl Session {
 
         Ok(())
     }
+}
+
+fn format_database_error(error: &anyhow::Error) -> String {
+    if let Some(db_error) = error
+        .downcast_ref::<postgres::Error>()
+        .and_then(postgres::Error::as_db_error)
+    {
+        return db_error.to_string();
+    }
+
+    error.to_string()
 }
