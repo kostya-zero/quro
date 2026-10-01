@@ -1,11 +1,13 @@
 use std::{env, process::exit};
 
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser};
 
 use crate::{
     cli::Cli,
-    drivers::{Driver, DriverKind, postgres::PostgresDriver, sqlite::SqliteDriver},
+    drivers::{
+        Driver, DriverKind, format_database_error, postgres::PostgresDriver, sqlite::SqliteDriver,
+    },
     session::Session,
     terminal::print_error,
 };
@@ -39,14 +41,12 @@ fn detect_driver(dsn: &str) -> Option<DriverKind> {
 
 fn connect(dsn: &str, driver_kind: DriverKind) -> Result<Box<dyn Driver>> {
     let driver: Box<dyn Driver> = match driver_kind {
-        DriverKind::Sqlite => Box::new(
-            SqliteDriver::new(dsn)
-                .map_err(|e| anyhow!("Failed to connect to sqlite database: {e}"))?,
-        ),
-        DriverKind::Postgres => Box::new(
-            PostgresDriver::new(dsn)
-                .map_err(|e| anyhow!("Failed to connect to postgres database: {e}"))?,
-        ),
+        DriverKind::Sqlite => {
+            Box::new(SqliteDriver::new(dsn).context("failed to connect to sqlite database")?)
+        }
+        DriverKind::Postgres => {
+            Box::new(PostgresDriver::new(dsn).context("failed to connect to postgres database")?)
+        }
     };
 
     Ok(driver)
@@ -81,7 +81,7 @@ fn main() {
     let driver = match connect(&database_url, driver_to_use) {
         Ok(d) => d,
         Err(e) => {
-            print_error(&format!("Driver error: {e}"));
+            print_error(&format!("{e}: {}", format_database_error(&e)));
             exit(1)
         }
     };

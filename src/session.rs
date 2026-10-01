@@ -14,7 +14,7 @@ use tabled::{
 use thiserror::Error;
 
 use crate::{
-    drivers::{Driver, QueryOutput},
+    drivers::{Driver, QueryOutput, format_database_error},
     terminal::{escape_control_chars, print_error},
 };
 
@@ -225,15 +225,4 @@ impl Session {
 
         Ok(())
     }
-}
-
-fn format_database_error(error: &anyhow::Error) -> String {
-    if let Some(db_error) = error
-        .downcast_ref::<postgres::Error>()
-        .and_then(postgres::Error::as_db_error)
-    {
-        return db_error.to_string();
-    }
-
-    error.to_string()
 }

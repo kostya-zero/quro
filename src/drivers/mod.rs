@@ -24,3 +24,18 @@ pub trait Driver {
     fn name(&self) -> &'static str;
     fn execute_query(&mut self, query: &str) -> Result<QueryOutput>;
 }
+
+pub fn format_database_error(error: &anyhow::Error) -> String {
+    if let Some(db_error) = error
+        .downcast_ref::<::postgres::Error>()
+        .and_then(::postgres::Error::as_db_error)
+    {
+        return db_error.message().to_owned();
+    }
+
+    if let Some(sqlite_error) = error.downcast_ref::<rusqlite::Error>() {
+        return sqlite_error.to_string();
+    }
+
+    error.root_cause().to_string()
+}

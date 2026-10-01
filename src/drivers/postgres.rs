@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use native_tls::TlsConnector;
 use postgres::{Client, SimpleQueryMessage};
 use postgres_native_tls::MakeTlsConnector;
@@ -12,8 +12,7 @@ pub struct PostgresDriver {
 impl PostgresDriver {
     pub fn new(dsn: &str) -> Result<Self> {
         let tls = MakeTlsConnector::new(TlsConnector::new()?);
-        let client =
-            Client::connect(dsn, tls).map_err(|e| anyhow!("failed to connect to database: {e}"))?;
+        let client = Client::connect(dsn, tls)?;
         Ok(Self { client })
     }
 }

@@ -1,4 +1,4 @@
-use anyhow::{Result, anyhow};
+use anyhow::Result;
 use rusqlite::{Connection, Params, types::ValueRef};
 
 use crate::drivers::QueryOutput;
@@ -11,8 +11,7 @@ pub struct SqliteDriver {
 
 impl SqliteDriver {
     pub fn new(dsn: &str) -> Result<Self> {
-        let connection =
-            Connection::open(dsn).map_err(|e| anyhow!("failed to connect sqlite: {e}"))?;
+        let connection = Connection::open(dsn)?;
 
         Ok(Self { connection })
     }
