@@ -4,8 +4,8 @@ use rustyline::{DefaultEditor, error::ReadlineError};
 use tabled::{
     builder::Builder,
     settings::{
-        Color, Format, Modify, Style,
-        object::{Columns, Rows},
+        Color, Format, Style,
+        object::{Rows, Segment},
         style::BorderColor,
     },
 };
@@ -77,19 +77,13 @@ impl Session {
         }
 
         let mut t = b.build();
-        t.with(
-            Modify::new(Rows::first())
-                .with(Format::content(|s| s.bold().to_string()))
-                .with(BorderColor::filled(Color::FG_BRIGHT_BLACK)),
-        );
-        t.with(Style::rounded())
-            .with(BorderColor::filled(Color::FG_BRIGHT_BLACK));
-
-        t.modify(Rows::new(1..), BorderColor::filled(Color::FG_BRIGHT_BLACK));
-        t.modify(
-            Columns::new(1..),
-            BorderColor::filled(Color::FG_BRIGHT_BLACK),
-        );
+        if t.count_rows() == 1 {
+            t.with(Style::rounded().remove_horizontals());
+        } else {
+            t.with(Style::rounded());
+        }
+        t.modify(Segment::all(), BorderColor::filled(Color::FG_BRIGHT_BLACK));
+        t.modify(Rows::first(), Format::content(|s| s.bold().to_string()));
 
         println!("{t}");
     }

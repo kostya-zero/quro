@@ -13,6 +13,7 @@ use crate::{
 };
 
 mod cli;
+mod config;
 mod drivers;
 mod session;
 mod terminal;
