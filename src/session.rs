@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
 use colored::Colorize;
 use rustyline::{DefaultEditor, error::ReadlineError};
 use tabled::{
@@ -29,15 +29,25 @@ impl Session {
         match cmd.to_ascii_lowercase().as_str() {
             ".version" => println!("{}", env!("CARGO_PKG_VERSION")),
             ".exit" | ".quit" => return Ok(true),
-            ".tables" => self.execute_query(self.driver.get_tables_query()),
-            ".db" => self.execute_query(self.driver.get_databases_query()),
+            ".tables" => {
+                let result = self
+                    .execute_query(self.driver.get_tables_query())
+                    .map_err(|e| anyhow!("database error: {}", format_database_error(&e)))?;
+                self.display_query_result(result);
+            }
+            ".db" => {
+                let result = self
+                    .execute_query(self.driver.get_databases_query())
+                    .map_err(|e| anyhow!("database error: {}", format_database_error(&e)))?;
+                self.display_query_result(result);
+            }
             ".driver" => println!("{}", self.driver.name()),
             ".schema" => {
                 if args.is_empty() {
                     bail!("table name is required");
                 }
 
-                let result = self.driver.get_tables_schema(args);
+                let result = self.driver.get_tables_schema(args)?;
                 self.display_query_result(result);
             }
             ".help" => {
@@ -88,24 +98,15 @@ impl Session {
         println!("{t}");
     }
 
-    pub fn execute_query(&mut self, query: &str) {
-        let result = self.driver.execute_query(query);
-        self.display_query_result(result);
+    pub fn execute_query(&mut self, query: &str) -> Result<QueryOutput> {
+        self.driver.execute_query(query)
     }
 
-    fn display_query_result(&self, result: Result<QueryOutput>) {
-        match result {
-            Ok(data) => {
-                if data.columns.is_empty() && data.rows.is_empty() {
-                    println!("OK, rows affected {}.", data.affected_rows);
-                } else {
-                    self.render_table(data);
-                }
-            }
-            Err(error) => print_error(&format!(
-                "database error: {}",
-                format_database_error(&error)
-            )),
+    fn display_query_result(&self, result: QueryOutput) {
+        if result.columns.is_empty() && result.rows.is_empty() {
+            println!("OK, rows affected {}.", result.affected_rows);
+        } else {
+            self.render_table(result);
         }
     }
 
@@ -127,14 +128,13 @@ impl Session {
             match readline {
                 Ok(line) => {
                     rl.add_history_entry(line.as_str())?;
-                    let trimmed = line.trim();
 
-                    if trimmed.is_empty() {
+                    if line.is_empty() {
                         continue;
                     }
 
-                    if trimmed.starts_with('.') {
-                        match self.execute_internal_command(trimmed) {
+                    if line.starts_with('.') {
+                        match self.execute_internal_command(&line) {
                             Ok(true) => return Ok(()),
                             Ok(false) => {}
                             Err(error) => print_error(&error.to_string()),
@@ -143,13 +143,18 @@ impl Session {
                     }
 
                     buf.push(' ');
-                    buf.push_str(trimmed);
-                    if !trimmed.ends_with(';') {
+                    buf.push_str(&line);
+                    if !line.ends_with(';') {
                         buf.push('\n');
                         continue;
                     }
 
-                    self.execute_query(&buf);
+                    match self.execute_query(&buf) {
+                        Ok(d) => self.render_table(d),
+                        Err(e) => {
+                            print_error(&format!("database error: {}", format_database_error(&e)))
+                        }
+                    }
                     buf.clear();
                 }
                 Err(ReadlineError::Interrupted) => {

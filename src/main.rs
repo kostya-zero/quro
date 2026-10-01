@@ -90,8 +90,13 @@ fn main() {
     let mut session = Session::new(driver);
 
     if let Some(q) = args.query {
-        session.execute_query(&q);
-        return;
+        match session.execute_query(&q) {
+            Ok(d) => session.render_table(d),
+            Err(e) => {
+                print_error(&format!("database error: {}", format_database_error(&e)));
+                exit(1)
+            }
+        }
     }
 
     if let Err(e) = session.run_repl() {
