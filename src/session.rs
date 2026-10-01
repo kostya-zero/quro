@@ -144,7 +144,7 @@ impl Session {
 
                     buf.push(' ');
                     buf.push_str(&line);
-                    if !line.ends_with(';') {
+                    if !is_complete(&buf) {
                         buf.push('\n');
                         continue;
                     }
@@ -178,4 +178,51 @@ impl Session {
 
         Ok(())
     }
+}
+
+/// Checks whether the buffer ends with a `;` outside of strings, comments and dollar-quoted bodies.
+fn is_complete(sql: &str) -> bool {
+    let mut i = 0;
+    let mut ends_with_semicolon = false;
+    while i < sql.len() {
+        let rest = &sql[i..];
+        if rest.starts_with("--") {
+            i += rest.find('\n').unwrap_or(rest.len());
+        } else if let Some(comment) = rest.strip_prefix("/*") {
+            let Some(end) = comment.find("*/") else {
+                return false;
+            };
+            i += end + 4;
+        } else if let Some(literal) = rest.strip_prefix('\'') {
+            // '' escapes fall out naturally as two adjacent literals
+            let Some(end) = literal.find('\'') else {
+                return false;
+            };
+            i += end + 2;
+            ends_with_semicolon = false;
+        } else if let Some(tag) = dollar_tag(rest) {
+            let Some(end) = rest[tag.len()..].find(tag) else {
+                return false;
+            };
+            i += end + tag.len() * 2;
+            ends_with_semicolon = false;
+        } else {
+            let c = rest.chars().next().expect("rest is non-empty");
+            if !c.is_whitespace() {
+                ends_with_semicolon = c == ';';
+            }
+            i += c.len_utf8();
+        }
+    }
+    ends_with_semicolon
+}
+
+/// Matches `$$` or `$tag$`, but not `$1`.
+fn dollar_tag(s: &str) -> Option<&str> {
+    let body = s.strip_prefix('$')?;
+    if body.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let end = body.find(|c: char| !(c.is_alphanumeric() || c == '_'))?;
+    (body.as_bytes()[end] == b'$').then(|| &s[..end + 2])
 }
