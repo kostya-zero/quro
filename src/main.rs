@@ -25,13 +25,10 @@ fn detect_driver(dsn: &str) -> Option<DriverKind> {
         return Some(DriverKind::Postgres);
     }
 
-    if lower.starts_with("sqlite:") || lower.starts_with("file:") {
-        return Some(DriverKind::Sqlite);
-    }
-
     if lower.ends_with(".db")
         || lower.ends_with(".sqlite")
         || lower.ends_with(".sqlite3")
+        || lower.starts_with("file:")
         || lower == ":memory:"
     {
         return Some(DriverKind::Sqlite);
