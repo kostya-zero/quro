@@ -1,6 +1,4 @@
-use std::str::FromStr;
-
-use anyhow::Result;
+use anyhow::{Result, bail};
 use colored::Colorize;
 use rustyline::{DefaultEditor, error::ReadlineError};
 use tabled::{
@@ -11,7 +9,6 @@ use tabled::{
         style::BorderColor,
     },
 };
-use thiserror::Error;
 
 use crate::{
     drivers::{Driver, QueryOutput, format_database_error},
@@ -22,70 +19,28 @@ pub struct Session {
     driver: Box<dyn Driver>,
 }
 
-#[derive(Debug)]
-pub enum Command {
-    Version,
-    Tables,
-    Db,
-    Schema,
-    Help,
-    Driver,
-    Exit,
-}
-
-#[derive(Debug, Error)]
-pub enum SessionError {
-    #[error("unknown command: {0}")]
-    CommandNotFound(String),
-
-    #[error("{0}")]
-    CommandError(String),
-}
-
-impl FromStr for Command {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_ascii_lowercase().as_str() {
-            ".version" => Ok(Self::Version),
-            ".db" => Ok(Self::Db),
-            ".driver" => Ok(Self::Driver),
-            ".tables" => Ok(Self::Tables),
-            ".schema" => Ok(Self::Schema),
-            ".help" => Ok(Self::Help),
-            ".exit" | ".quit" => Ok(Self::Exit),
-            _ => Err(format!("unknown command: {s}")),
-        }
-    }
-}
-
 impl Session {
     pub fn new(driver: Box<dyn Driver>) -> Self {
         Self { driver }
     }
 
-    fn execute_internal_command(&mut self, command: &str) -> Result<bool, SessionError> {
-        let mut parts = command.splitn(2, ' ');
-        let cmd = Command::from_str(parts.next().unwrap())
-            .map_err(|_| SessionError::CommandNotFound(command.to_string()))?;
-        match cmd {
-            Command::Version => println!("{}", env!("CARGO_PKG_VERSION")),
-            Command::Exit => return Ok(true),
-            Command::Tables => self.execute_query(self.driver.get_tables_query()),
-            Command::Db => self.execute_query(self.driver.get_databases_query()),
-            Command::Driver => println!("{}", self.driver.name()),
-            Command::Schema => {
-                let table = parts
-                    .next()
-                    .filter(|table| !table.is_empty())
-                    .ok_or_else(|| {
-                        SessionError::CommandError("table name is required".to_string())
-                    })?;
+    fn execute_internal_command(&mut self, command: &str) -> Result<bool> {
+        let (cmd, args) = command.split_once(' ').unwrap_or((command, ""));
+        match cmd.to_ascii_lowercase().as_str() {
+            ".version" => println!("{}", env!("CARGO_PKG_VERSION")),
+            ".exit" | ".quit" => return Ok(true),
+            ".tables" => self.execute_query(self.driver.get_tables_query()),
+            ".db" => self.execute_query(self.driver.get_databases_query()),
+            ".driver" => println!("{}", self.driver.name()),
+            ".schema" => {
+                if args.is_empty() {
+                    bail!("table name is required");
+                }
 
-                let result = self.driver.get_tables_schema(table);
+                let result = self.driver.get_tables_schema(args);
                 self.display_query_result(result);
             }
-            Command::Help => {
+            ".help" => {
                 let columns = vec!["command".to_string(), "description".to_string()];
 
                 let rows = vec![
@@ -107,6 +62,7 @@ impl Session {
                     affected_rows: 0,
                 });
             }
+            _ => bail!("command to found: {command}"),
         }
 
         Ok(false)
