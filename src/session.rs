@@ -11,17 +11,19 @@ use tabled::{
 };
 
 use crate::{
+    config::{BorderStyle, Config},
     drivers::{Driver, QueryOutput, format_database_error},
     terminal::{escape_control_chars, print_error},
 };
 
 pub struct Session {
     driver: Box<dyn Driver>,
+    config: Config,
 }
 
 impl Session {
-    pub fn new(driver: Box<dyn Driver>) -> Self {
-        Self { driver }
+    pub fn new(driver: Box<dyn Driver>, config: Config) -> Self {
+        Self { driver, config }
     }
 
     fn execute_internal_command(&mut self, command: &str) -> Result<bool> {
@@ -87,11 +89,14 @@ impl Session {
         }
 
         let mut t = b.build();
-        if t.count_rows() == 1 {
-            t.with(Style::rounded().remove_horizontals());
-        } else {
-            t.with(Style::rounded());
-        }
+
+        match (&self.config.appearence.border_style, t.count_rows() == 1) {
+            (BorderStyle::None, _) => t.with(Style::empty()),
+            (BorderStyle::Rounded, true) => t.with(Style::rounded().remove_horizontals()),
+            (BorderStyle::Rounded, false) => t.with(Style::rounded()),
+            (BorderStyle::Modern, true) => t.with(Style::modern().remove_horizontal()),
+            (BorderStyle::Modern, false) => t.with(Style::modern()),
+        };
         t.modify(Segment::all(), BorderColor::filled(Color::FG_BRIGHT_BLACK));
         t.modify(Rows::first(), Format::content(|s| s.bold().to_string()));
 

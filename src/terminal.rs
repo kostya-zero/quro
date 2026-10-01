@@ -1,7 +1,11 @@
 use colored::Colorize;
 
 pub fn print_error(msg: &str) {
-    println!("{}: {}", "error".bright_red().bold(), msg);
+    eprintln!("{}: {}", "error".bright_red().bold(), msg);
+}
+
+pub fn print_warn(msg: &str) {
+    eprintln!("{}: {}", "warn".bright_yellow().bold(), msg);
 }
 
 pub fn escape_control_chars(value: String) -> String {

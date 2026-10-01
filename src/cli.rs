@@ -26,4 +26,9 @@ pub struct Cli {
     /// Print a list of all supported drivers.
     #[arg(short, long, action = ArgAction::SetTrue)]
     pub list_drivers: bool,
+
+    /// If Quro failed to load your configuration, it will
+    /// use the default values instead of exiting.
+    #[arg(short, long, action = ArgAction::SetTrue)]
+    pub allow_default_config: bool,
 }

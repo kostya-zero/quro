@@ -5,11 +5,12 @@ use clap::{CommandFactory, Parser};
 
 use crate::{
     cli::Cli,
+    config::{Config, config_path, load_config},
     drivers::{
         Driver, DriverKind, format_database_error, postgres::PostgresDriver, sqlite::SqliteDriver,
     },
     session::Session,
-    terminal::print_error,
+    terminal::{print_error, print_warn},
 };
 
 mod cli;
@@ -84,7 +85,23 @@ fn main() {
         }
     };
 
-    let mut session = Session::new(driver);
+    let config = if config_path().exists() {
+        match load_config() {
+            Ok(c) => c,
+            Err(e) => {
+                if !args.allow_default_config {
+                    print_error(&format!("failed to load your configuration: {e}"));
+                    exit(1)
+                }
+                print_warn(&format!("failed to load config, using defaults: {e}"));
+                Config::default()
+            }
+        }
+    } else {
+        Config::default()
+    };
+
+    let mut session = Session::new(driver, config);
 
     if let Some(q) = args.query {
         match session.execute_query(&q) {
