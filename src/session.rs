@@ -135,12 +135,9 @@ impl Session {
 
                     if trimmed.starts_with('.') {
                         match self.execute_internal_command(trimmed) {
+                            Ok(true) => return Ok(()),
+                            Ok(false) => {}
                             Err(error) => print_error(&error.to_string()),
-                            Ok(is_exit) => {
-                                if is_exit {
-                                    return Ok(());
-                                }
-                            }
                         }
                         continue;
                     }
@@ -148,6 +145,7 @@ impl Session {
                     buf.push(' ');
                     buf.push_str(trimmed);
                     if !trimmed.ends_with(';') {
+                        buf.push('\n');
                         continue;
                     }
 
