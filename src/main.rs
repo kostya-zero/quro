@@ -105,7 +105,10 @@ fn main() {
 
     if let Some(q) = args.query {
         match session.execute_query(&q) {
-            Ok(d) => session.render_table(d),
+            Ok(d) => {
+                session.render_table(d);
+                exit(0)
+            }
             Err(e) => {
                 print_error(&format!("database error: {}", format_database_error(&e)));
                 exit(1)
