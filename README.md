@@ -43,6 +43,33 @@ quro -d postgres "user=myuser password=mypass dbname=mydb"
 
 You can find even more options with `--help` argument.
 
+## Configuration
+
+Quro reads an optional TOML file from `<config dir>/quro/config.toml` (e.g. `~/.config/quro/config.toml` on Linux, `%APPDATA%\quro\config.toml` on Windows). Print the exact path with `quro --config-path`.
+
+```toml
+# Named databases, connect with `quro -n local`
+[databases]
+local = "file:my_database.db"
+prod = "postgres://user:password@localhost:5432/dbname"
+
+# Table style in query output
+[appearence]
+border_style = "rounded"
+```
+
+Every key is optional. Available `border_style` values: `none`, `rounded` (default), `modern`, `psql`, `ascii`, `ascii_rounded`, `modern_rounded`, `sharp`, `extended`, `dots`, `markdown`, `re_structured_text`, `blank`.
+
+```bash
+# List databases from the configuration
+quro --list-databases
+
+# Connect to a named database
+quro -n prod
+```
+
+If there is no config file, Quro just uses defaults. If the file exists but can't be read or parsed, Quro exits with an error. Pass `--allow-default-config` to fall back to defaults instead.
+
 ## License
 
 This project is licensed under the MIT License.
