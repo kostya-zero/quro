@@ -27,6 +27,16 @@ pub struct Cli {
     #[arg(short, long, action = ArgAction::SetTrue)]
     pub list_drivers: bool,
 
+    /// A name of database from configuration file to connect to.
+    /// Any other sources (environment variable and databaser URL)
+    /// will be ignored.
+    #[arg(short, long)]
+    pub name: Option<String>,
+
+    /// Prints the path to the configuration file.
+    #[arg(short, long)]
+    pub config_path: bool,
+
     /// If Quro failed to load your configuration, it will
     /// use the default values instead of exiting.
     #[arg(short, long, action = ArgAction::SetTrue)]

@@ -96,6 +96,28 @@ impl Session {
             (BorderStyle::Rounded, false) => t.with(Style::rounded()),
             (BorderStyle::Modern, true) => t.with(Style::modern().remove_horizontal()),
             (BorderStyle::Modern, false) => t.with(Style::modern()),
+            (BorderStyle::Psql, true) => t.with(Style::psql().remove_horizontals()),
+            (BorderStyle::Psql, false) => t.with(Style::psql()),
+            (BorderStyle::Ascii, true) => t.with(Style::ascii().remove_horizontal()),
+            (BorderStyle::Ascii, false) => t.with(Style::ascii()),
+            (BorderStyle::AsciiRounded, _) => t.with(Style::ascii_rounded()),
+            (BorderStyle::ModernRounded, true) => {
+                t.with(Style::modern_rounded().remove_horizontal())
+            }
+            (BorderStyle::ModernRounded, false) => t.with(Style::modern_rounded()),
+            (BorderStyle::Sharp, true) => t.with(Style::sharp().remove_horizontals()),
+            (BorderStyle::Sharp, false) => t.with(Style::sharp()),
+            (BorderStyle::Extended, true) => t.with(Style::extended().remove_horizontal()),
+            (BorderStyle::Extended, false) => t.with(Style::extended()),
+            (BorderStyle::Dots, true) => t.with(Style::dots().remove_horizontal()),
+            (BorderStyle::Dots, false) => t.with(Style::dots()),
+            (BorderStyle::Markdown, true) => t.with(Style::markdown().remove_horizontals()),
+            (BorderStyle::Markdown, false) => t.with(Style::markdown()),
+            (BorderStyle::ReStructuredText, true) => {
+                t.with(Style::re_structured_text().remove_horizontals())
+            }
+            (BorderStyle::ReStructuredText, false) => t.with(Style::re_structured_text()),
+            (BorderStyle::Blank, _) => t.with(Style::blank()),
         };
         t.modify(Segment::all(), BorderColor::filled(Color::FG_BRIGHT_BLACK));
         t.modify(Rows::first(), Format::content(|s| s.bold().to_string()));

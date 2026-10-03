@@ -58,13 +58,49 @@ fn main() {
         return;
     }
 
-    let database_url = match args.database_url.or_else(|| env::var("DATABASE_URL").ok()) {
-        Some(database_url) => database_url,
-        None => {
-            Cli::command().print_help().unwrap();
+    if args.config_path {
+        println!("{}", config_path().to_string_lossy());
+        return;
+    }
+
+    let config = if config_path().exists() {
+        match load_config() {
+            Ok(c) => c,
+            Err(e) => {
+                if !args.allow_default_config {
+                    print_error(&format!("failed to load your configuration: {e}"));
+                    exit(1)
+                }
+                print_warn(&format!("failed to load config, using defaults: {e}"));
+                Config::default()
+            }
+        }
+    } else {
+        Config::default()
+    };
+
+    let mut database_url: String = String::new();
+
+    if let Some(name) = args.name {
+        if let Some(url) = config.databases.get(&name) {
+            database_url = url.clone();
+        } else {
+            print_error(&format!(
+                "databaser with name '{name}' is not found in your configuration."
+            ));
             exit(1)
         }
-    };
+    }
+
+    if database_url.is_empty() {
+        match args.database_url.or_else(|| env::var("DATABASE_URL").ok()) {
+            Some(url) => database_url = url,
+            None => {
+                Cli::command().print_help().unwrap();
+                exit(1)
+            }
+        }
+    }
 
     let driver_to_use = if let Some(d) = args.driver {
         d
@@ -85,29 +121,13 @@ fn main() {
         }
     };
 
-    let config = if config_path().exists() {
-        match load_config() {
-            Ok(c) => c,
-            Err(e) => {
-                if !args.allow_default_config {
-                    print_error(&format!("failed to load your configuration: {e}"));
-                    exit(1)
-                }
-                print_warn(&format!("failed to load config, using defaults: {e}"));
-                Config::default()
-            }
-        }
-    } else {
-        Config::default()
-    };
-
     let mut session = Session::new(driver, config);
 
     if let Some(q) = args.query {
         match session.execute_query(&q) {
             Ok(d) => {
                 session.render_table(d);
-                exit(0)
+                return;
             }
             Err(e) => {
                 print_error(&format!("database error: {}", format_database_error(&e)));

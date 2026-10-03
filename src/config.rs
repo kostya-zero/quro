@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{collections::HashMap, fs, path::PathBuf};
 
 use serde::Deserialize;
 use thiserror::Error;
@@ -19,12 +19,23 @@ pub enum BorderStyle {
     #[default]
     Rounded,
     Modern,
+    Psql,
+    Ascii,
+    AsciiRounded,
+    ModernRounded,
+    Sharp,
+    Extended,
+    Dots,
+    Markdown,
+    ReStructuredText,
+    Blank,
 }
 
 #[derive(Deserialize, Default)]
 #[serde(default)]
 pub struct Config {
     pub appearence: Appearance,
+    pub databases: HashMap<String, String>,
 }
 
 #[derive(Deserialize, Default)]
