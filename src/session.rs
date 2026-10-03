@@ -45,11 +45,18 @@ impl Session {
             }
             ".driver" => println!("{}", self.driver.name()),
             ".schema" => {
-                if args.is_empty() {
+                let table = args.trim();
+                if table.is_empty() {
                     bail!("table name is required");
                 }
 
-                let result = self.driver.get_tables_schema(args)?;
+                let result = self
+                    .driver
+                    .get_tables_schema(table)
+                    .map_err(|e| anyhow!("database error: {}", format_database_error(&e)))?;
+                if result.rows.is_empty() {
+                    bail!("table not found: {table}");
+                }
                 self.display_query_result(result);
             }
             ".help" => {

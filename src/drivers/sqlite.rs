@@ -87,7 +87,10 @@ impl SqliteDriver {
 
 impl Driver for SqliteDriver {
     fn get_tables_query(&self) -> &'static str {
-        "SELECT name FROM sqlite_master WHERE type='table'"
+        "SELECT schema, name, type, ncol AS columns \
+        FROM pragma_table_list \
+        WHERE name NOT GLOB 'sqlite_*' \
+        ORDER BY schema, name"
     }
 
     fn get_databases_query(&self) -> &'static str {
@@ -95,7 +98,21 @@ impl Driver for SqliteDriver {
     }
 
     fn get_tables_schema(&mut self, table: &str) -> Result<QueryOutput> {
-        self.execute_query_with("SELECT * FROM pragma_table_info(?1)", [table])
+        self.execute_query_with(
+            "SELECT \
+                p.name AS \"column\", \
+                p.type AS \"type\", \
+                CASE WHEN p.\"notnull\" THEN 'no' ELSE 'yes' END AS \"nullable\", \
+                coalesce(p.dflt_value, '') AS \"default\", \
+                concat_ws(', ', \
+                    CASE WHEN p.pk > 0 THEN 'PK' END, \
+                    (SELECT group_concat('FK → ' || f.\"table\" || coalesce('(' || f.\"to\" || ')', ''), ', ') \
+                     FROM pragma_foreign_key_list(?1) f \
+                     WHERE f.\"from\" = p.name)) AS \"key\" \
+            FROM pragma_table_info(?1) p \
+            ORDER BY p.cid",
+            [table],
+        )
     }
 
     fn name(&self) -> &'static str {

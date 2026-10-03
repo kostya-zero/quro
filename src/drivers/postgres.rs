@@ -19,7 +19,24 @@ impl PostgresDriver {
 
 impl Driver for PostgresDriver {
     fn get_tables_query(&self) -> &'static str {
-        "SELECT table_name FROM information_schema.tables WHERE table_schema='public'"
+        "SELECT \
+            n.nspname AS \"schema\", \
+            c.relname AS \"name\", \
+            CASE c.relkind \
+                WHEN 'r' THEN 'table' \
+                WHEN 'v' THEN 'view' \
+                WHEN 'm' THEN 'materialized view' \
+                WHEN 'p' THEN 'partitioned table' \
+                WHEN 'f' THEN 'foreign table' \
+            END AS \"type\", \
+            pg_size_pretty(pg_total_relation_size(c.oid)) AS \"size\" \
+        FROM pg_class c \
+        JOIN pg_namespace n ON n.oid = c.relnamespace \
+        WHERE c.relkind IN ('r', 'v', 'm', 'p', 'f') \
+            AND NOT c.relispartition \
+            AND n.nspname !~ '^pg_' \
+            AND n.nspname <> 'information_schema' \
+        ORDER BY 1, 2"
     }
 
     fn get_databases_query(&self) -> &'static str {
@@ -35,19 +52,36 @@ impl Driver for PostgresDriver {
     }
 
     fn get_tables_schema(&mut self, table: &str) -> Result<QueryOutput> {
+        // to_regclass resolves `schema.table`, quoted names and search_path, and yields NULL
+        // for unknown tables instead of an error.
         let rows = self.client.query(
-            "SELECT column_name, data_type \
-             FROM information_schema.columns \
-             WHERE table_schema = 'public' AND table_name = $1 \
-             ORDER BY ordinal_position",
+            "SELECT \
+                a.attname::text, \
+                format_type(a.atttypid, a.atttypmod), \
+                CASE WHEN a.attnotnull THEN 'no' ELSE 'yes' END, \
+                coalesce(pg_get_expr(d.adbin, d.adrelid), ''), \
+                concat_ws(', ', \
+                    (SELECT 'PK' FROM pg_constraint c \
+                     WHERE c.conrelid = a.attrelid AND c.contype = 'p' AND a.attnum = ANY(c.conkey)), \
+                    (SELECT string_agg('FK → ' || c.confrelid::regclass::text || '(' || fa.attname || ')', ', ') \
+                     FROM pg_constraint c \
+                     CROSS JOIN LATERAL unnest(c.conkey, c.confkey) AS k(attnum, fattnum) \
+                     JOIN pg_attribute fa ON fa.attrelid = c.confrelid AND fa.attnum = k.fattnum \
+                     WHERE c.conrelid = a.attrelid AND c.contype = 'f' AND k.attnum = a.attnum)) \
+            FROM pg_attribute a \
+            LEFT JOIN pg_attrdef d ON d.adrelid = a.attrelid AND d.adnum = a.attnum \
+            WHERE a.attrelid = to_regclass($1) AND a.attnum > 0 AND NOT a.attisdropped \
+            ORDER BY a.attnum",
             &[&table],
         )?;
 
         Ok(QueryOutput {
-            columns: vec!["column_name".to_owned(), "data_type".to_owned()],
+            columns: ["column", "type", "nullable", "default", "key"]
+                .map(str::to_owned)
+                .to_vec(),
             rows: rows
                 .into_iter()
-                .map(|row| vec![row.get(0), row.get(1)])
+                .map(|row| (0..row.len()).map(|index| row.get(index)).collect())
                 .collect(),
             affected_rows: 0,
         })
