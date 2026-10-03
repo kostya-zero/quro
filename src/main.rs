@@ -88,28 +88,27 @@ fn main() {
         return;
     }
 
-    let mut database_url: String = String::new();
-
-    if let Some(name) = args.name {
-        if let Some(url) = config.databases.get(&name) {
-            database_url = url.clone();
-        } else {
-            print_error(&format!(
-                "databaser with name '{name}' is not found in your configuration."
-            ));
-            exit(1)
-        }
-    }
-
-    if database_url.is_empty() {
-        match args.database_url.or_else(|| env::var("DATABASE_URL").ok()) {
-            Some(url) => database_url = url,
+    let database_url = if let Some(name) = args.name {
+        match config.databases.get(&name) {
+            Some(url) => url.clone(),
             None => {
-                Cli::command().print_help().unwrap();
+                print_error(&format!(
+                    "database with name '{name}' is not found in your configuration."
+                ));
                 exit(1)
             }
         }
-    }
+    } else {
+        match args.database_url.or_else(|| env::var("DATABASE_URL").ok()) {
+            Some(url) => url,
+            None => {
+                if let Err(e) = Cli::command().print_help() {
+                    print_error(&format!("failed to print help: {e}"));
+                }
+                exit(1)
+            }
+        }
+    };
 
     let driver_to_use = if let Some(d) = args.driver {
         d
