@@ -1,26 +1,26 @@
 # Quro
 
-**Quro** is a command-line interface (CLI) tool designed to provide an interactive query runner for various databases, including PostgreSQL and SQLite. It provides a REPL-like experience for executing SQL queries against connected databases.
+**Quro** is a command-line query runner for databases such as PostgreSQL and SQLite. It provides a REPL for executing SQL queries against connected databases.
 
 ## Features
 
 - **Interactive REPL**: Execute SQL queries in real-time.
-- **Multi-Database Support**: Currently supports PostgreSQL and SQLite.
-- **Easy Configuration**: Connect using standard Data Source Names (DSN).
+- **Multiple databases**: Supports PostgreSQL and SQLite.
+- **Simple configuration**: Connect using standard Data Source Names (DSNs).
 
 ## Installation
 
-If you have Rust toolchain installed, run this command:
+If you have the Rust toolchain installed, run:
 
 ```bash
 cargo install quro
 ```
 
-You can go to [GitHub Releases](https://github.com/kostya-zero/quro/releases) page and download binary for your OS and architecture.
+Download a binary for your operating system and architecture from [GitHub Releases](https://github.com/kostya-zero/quro/releases).
 
 ## Usage
 
-Run the tool by providing a DSN:
+Run the tool with a DSN:
 
 ```bash
 # Provide a SQLite DSN
@@ -30,7 +30,7 @@ quro file:my_database.db
 quro "postgres://user:password@localhost:5432/dbname"
 ```
 
-The driver is automatically detected from the DSN. You can also specify it explicitly or use an environment variable:
+Quro detects the driver from the DSN. You can also specify the driver explicitly or provide the DSN through an environment variable:
 
 ```bash
 # Using DATABASE_URL environment variable
@@ -40,11 +40,9 @@ DATABASE_URL="postgres://user:password@localhost:5432/dbname" quro
 quro -d postgres "user=myuser password=mypass dbname=mydb"
 ```
 
-### Options
 
-- `-d, --driver`: Specify the database driver (`postgres` or `sqlite`).
-- `--list-drivers`: List all supported database drivers.
+You can find even more options with `--help` argument.
 
 ## License
 
-This project is licensed under the terms of the MIT license.
+This project is licensed under the MIT License.

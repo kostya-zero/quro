@@ -34,28 +34,28 @@ impl Session {
             ".tables" => {
                 let result = self
                     .execute_query(self.driver.get_tables_query())
-                    .map_err(|e| anyhow!("database error: {}", format_database_error(&e)))?;
+                    .map_err(|e| anyhow!("Database error: {}", format_database_error(&e)))?;
                 self.display_query_result(result);
             }
             ".db" => {
                 let result = self
                     .execute_query(self.driver.get_databases_query())
-                    .map_err(|e| anyhow!("database error: {}", format_database_error(&e)))?;
+                    .map_err(|e| anyhow!("Database error: {}", format_database_error(&e)))?;
                 self.display_query_result(result);
             }
             ".driver" => println!("{}", self.driver.name()),
             ".schema" => {
                 let table = args.trim();
                 if table.is_empty() {
-                    bail!("table name is required");
+                    bail!("A table name is required.");
                 }
 
                 let result = self
                     .driver
                     .get_tables_schema(table)
-                    .map_err(|e| anyhow!("database error: {}", format_database_error(&e)))?;
+                    .map_err(|e| anyhow!("Database error: {}", format_database_error(&e)))?;
                 if result.rows.is_empty() {
-                    bail!("table not found: {table}");
+                    bail!("Table not found: {table}");
                 }
                 self.display_query_result(result);
             }
@@ -63,15 +63,15 @@ impl Session {
                 let columns = vec!["command".to_string(), "description".to_string()];
 
                 let rows = vec![
-                    vec![".help".to_string(), "prints help message".to_string()],
-                    vec![".version".to_string(), "prints version of quro".to_string()],
-                    vec![".driver".to_string(), "prints driver name".to_string()],
-                    vec![".exit, .quit".to_string(), "exit quro".to_string()],
-                    vec![".db".to_string(), "prints all databases".to_string()],
-                    vec![".tables".to_string(), "prints all tables".to_string()],
+                    vec![".help".to_string(), "Show available commands".to_string()],
+                    vec![".version".to_string(), "Show the Quro version".to_string()],
+                    vec![".driver".to_string(), "Show the driver name".to_string()],
+                    vec![".exit, .quit".to_string(), "Exit Quro".to_string()],
+                    vec![".db".to_string(), "List all databases".to_string()],
+                    vec![".tables".to_string(), "List all tables".to_string()],
                     vec![
                         ".schema <table>".to_string(),
-                        "prints schema of specific table".to_string(),
+                        "Show the schema for a table".to_string(),
                     ],
                 ];
 
@@ -81,7 +81,7 @@ impl Session {
                     affected_rows: 0,
                 });
             }
-            _ => bail!("command to found: {command}"),
+            _ => bail!("Unknown command: {command}"),
         }
 
         Ok(false)
@@ -138,7 +138,7 @@ impl Session {
 
     fn display_query_result(&self, result: QueryOutput) {
         if result.columns.is_empty() && result.rows.is_empty() {
-            println!("OK, rows affected {}.", result.affected_rows);
+            println!("OK. Rows affected: {}.", result.affected_rows);
         } else {
             self.render_table(result);
         }
@@ -186,7 +186,7 @@ impl Session {
                     match self.execute_query(&buf) {
                         Ok(d) => self.render_table(d),
                         Err(e) => {
-                            print_error(&format!("database error: {}", format_database_error(&e)))
+                            print_error(&format!("Database error: {}", format_database_error(&e)))
                         }
                     }
                     buf.clear();
@@ -194,7 +194,7 @@ impl Session {
                 Err(ReadlineError::Interrupted) => {
                     if !buf.is_empty() {
                         buf.clear();
-                        println!("Buffer has been cleared.");
+                        println!("The query buffer was cleared.");
                         continue;
                     }
                 }
@@ -228,7 +228,7 @@ fn is_complete(sql: &str) -> bool {
             };
             i += end + 4;
         } else if let Some(literal) = rest.strip_prefix('\'') {
-            // '' escapes fall out naturally as two adjacent literals
+            // Doubled single quotes are treated as adjacent string literals.
             let Some(end) = literal.find('\'') else {
                 return false;
             };

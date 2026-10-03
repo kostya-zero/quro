@@ -5,10 +5,10 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ConfigError {
-    #[error("failed to read a configuration file at '{0}': {1}")]
+    #[error("Failed to read the configuration file at '{0}': {1}")]
     ReadFailed(String, String),
 
-    #[error("configuration has a bad format: {0}")]
+    #[error("Invalid configuration format: {0}")]
     BadFormat(String),
 }
 

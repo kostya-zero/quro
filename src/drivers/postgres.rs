@@ -52,8 +52,8 @@ impl Driver for PostgresDriver {
     }
 
     fn get_tables_schema(&mut self, table: &str) -> Result<QueryOutput> {
-        // to_regclass resolves `schema.table`, quoted names and search_path, and yields NULL
-        // for unknown tables instead of an error.
+        // to_regclass resolves `schema.table`, quoted names, and search_path. It yields NULL
+        // for unknown tables instead of returning an error.
         let rows = self.client.query(
             "SELECT \
                 a.attname::text, \

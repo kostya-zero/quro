@@ -11,38 +11,35 @@ use crate::drivers::DriverKind;
 
 )]
 pub struct Cli {
-    /// A database URL that Quro had to connect to.
+    /// Database URL to connect to.
     pub database_url: Option<String>,
 
-    /// A driver to use. Usually determined from database URL,
-    /// but can be specified explicitly.
+    /// Database driver to use. Inferred from the database URL by default.
     #[arg(short, long)]
     pub driver: Option<DriverKind>,
 
-    /// Execute a specified query instead of launching REPL.
+    /// Execute a query instead of starting the REPL.
     #[arg(short, long)]
     pub query: Option<String>,
 
-    /// Print a list of all supported drivers.
-    #[arg( long, action = ArgAction::SetTrue)]
+    /// List all supported drivers.
+    #[arg(long, action = ArgAction::SetTrue)]
     pub list_drivers: bool,
 
-    /// A name of database from configuration file to connect to.
-    /// Any other sources (environment variable and databaser URL)
-    /// will be ignored.
+    /// Name of the database to connect to from the configuration file.
+    /// Other sources, including environment variables and the database URL, are ignored.
     #[arg(short, long)]
     pub name: Option<String>,
 
-    /// Prints all databases available from your configuration.
+    /// List all databases defined in the configuration.
     #[arg(long)]
     pub list_databases: bool,
 
-    /// Prints the path to the configuration file.
+    /// Print the path to the configuration file.
     #[arg(short, long)]
     pub config_path: bool,
 
-    /// If Quro failed to load your configuration, it will
-    /// use the default values instead of exiting.
+    /// Use default values if the configuration cannot be loaded.
     #[arg(short, long, action = ArgAction::SetTrue)]
     pub allow_default_config: bool,
 }

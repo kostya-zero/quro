@@ -42,10 +42,13 @@ fn detect_driver(dsn: &str) -> Option<DriverKind> {
 fn connect(dsn: &str, driver_kind: DriverKind) -> Result<Box<dyn Driver>> {
     let driver: Box<dyn Driver> = match driver_kind {
         DriverKind::Sqlite => {
-            Box::new(SqliteDriver::new(dsn).context("failed to connect to sqlite database")?)
+            Box::new(SqliteDriver::new(dsn).context("Failed to connect to the SQLite database")?)
         }
         DriverKind::Postgres => {
-            Box::new(PostgresDriver::new(dsn).context("failed to connect to postgres database")?)
+            Box::new(
+                PostgresDriver::new(dsn)
+                    .context("Failed to connect to the PostgreSQL database")?,
+            )
         }
     };
 
@@ -69,10 +72,10 @@ fn main() {
             Ok(c) => c,
             Err(e) => {
                 if !args.allow_default_config {
-                    print_error(&format!("failed to load your configuration: {e}"));
+                    print_error(&format!("Failed to load the configuration: {e}"));
                     exit(1)
                 }
-                print_warn(&format!("failed to load config, using defaults: {e}"));
+                print_warn(&format!("Failed to load the configuration; using defaults: {e}"));
                 Config::default()
             }
         }
@@ -93,7 +96,7 @@ fn main() {
             Some(url) => url.clone(),
             None => {
                 print_error(&format!(
-                    "database with name '{name}' is not found in your configuration."
+                    "Database '{name}' was not found in the configuration."
                 ));
                 exit(1)
             }
@@ -103,7 +106,7 @@ fn main() {
             Some(url) => url,
             None => {
                 if let Err(e) = Cli::command().print_help() {
-                    print_error(&format!("failed to print help: {e}"));
+                    print_error(&format!("Could not print help: {e}"));
                 }
                 exit(1)
             }
@@ -116,7 +119,7 @@ fn main() {
         d
     } else {
         print_error(
-            "Failed to auto-detect database driver. Please, specify the driver name explicitly with '--driver'.",
+            "Could not detect the database driver. Specify it explicitly with '--driver'.",
         );
         exit(1)
     };
@@ -138,14 +141,14 @@ fn main() {
                 return;
             }
             Err(e) => {
-                print_error(&format!("database error: {}", format_database_error(&e)));
+                print_error(&format!("Database error: {}", format_database_error(&e)));
                 exit(1)
             }
         }
     }
 
     if let Err(e) = session.run_repl() {
-        print_error(&format!("REPL Error: {e}"));
+        print_error(&format!("REPL error: {e}"));
         exit(1)
     }
 }
