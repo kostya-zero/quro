@@ -2,6 +2,7 @@ use std::{env, process::exit};
 
 use anyhow::{Context, Result};
 use clap::{CommandFactory, Parser};
+use colored::Colorize;
 
 use crate::{
     cli::Cli,
@@ -78,6 +79,14 @@ fn main() {
     } else {
         Config::default()
     };
+
+    if args.list_databases {
+        config
+            .databases
+            .iter()
+            .for_each(|f| println!("{} {}", f.0, format!("({})", f.1).bright_black()));
+        return;
+    }
 
     let mut database_url: String = String::new();
 

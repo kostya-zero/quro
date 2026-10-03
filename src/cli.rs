@@ -24,7 +24,7 @@ pub struct Cli {
     pub query: Option<String>,
 
     /// Print a list of all supported drivers.
-    #[arg(short, long, action = ArgAction::SetTrue)]
+    #[arg( long, action = ArgAction::SetTrue)]
     pub list_drivers: bool,
 
     /// A name of database from configuration file to connect to.
@@ -32,6 +32,10 @@ pub struct Cli {
     /// will be ignored.
     #[arg(short, long)]
     pub name: Option<String>,
+
+    /// Prints all databases available from your configuration.
+    #[arg(long)]
+    pub list_databases: bool,
 
     /// Prints the path to the configuration file.
     #[arg(short, long)]
