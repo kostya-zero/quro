@@ -1,6 +1,6 @@
 [package]
 name = "quro"
-description = "A CLI query runner with support for multiple databases."
+description = "A command-line query runner for multiple databases."
 authors = ["Konstantin Zhigaylo <kostyazero@proton.me>"]
 repository = "https://github.com/kostya-zero/quro"
 homepage = "https://github.com/kostya-zero/quro"
