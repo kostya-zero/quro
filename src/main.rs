@@ -44,12 +44,9 @@ fn connect(dsn: &str, driver_kind: DriverKind) -> Result<Box<dyn Driver>> {
         DriverKind::Sqlite => {
             Box::new(SqliteDriver::new(dsn).context("Failed to connect to the SQLite database")?)
         }
-        DriverKind::Postgres => {
-            Box::new(
-                PostgresDriver::new(dsn)
-                    .context("Failed to connect to the PostgreSQL database")?,
-            )
-        }
+        DriverKind::Postgres => Box::new(
+            PostgresDriver::new(dsn).context("Failed to connect to the PostgreSQL database")?,
+        ),
     };
 
     Ok(driver)
@@ -75,7 +72,9 @@ fn main() {
                     print_error(&format!("Failed to load the configuration: {e}"));
                     exit(1)
                 }
-                print_warn(&format!("Failed to load the configuration; using defaults: {e}"));
+                print_warn(&format!(
+                    "Failed to load the configuration; using defaults: {e}"
+                ));
                 Config::default()
             }
         }
@@ -118,9 +117,7 @@ fn main() {
     } else if let Some(d) = detect_driver(&database_url) {
         d
     } else {
-        print_error(
-            "Could not detect the database driver. Specify it explicitly with '--driver'.",
-        );
+        print_error("Could not detect the database driver. Specify it explicitly with '--driver'.");
         exit(1)
     };
 
