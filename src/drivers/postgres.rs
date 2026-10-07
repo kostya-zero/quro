@@ -119,4 +119,77 @@ impl Driver for PostgresDriver {
 
         Ok(results)
     }
+
+    /// Checks whether the buffer ends with a `;` outside of strings, quoted identifiers, comments and dollar-quoted bodies.
+    fn is_complete(&self, sql: &str) -> bool {
+        let mut i = 0;
+        let mut ends_with_semicolon = false;
+        while i < sql.len() {
+            let rest = &sql[i..];
+            if rest.starts_with("--") {
+                i += rest.find('\n').unwrap_or(rest.len());
+            } else if let Some(comment) = rest.strip_prefix("/*") {
+                let Some(end) = comment.find("*/") else {
+                    return false;
+                };
+                i += end + 4;
+            } else if let Some(literal) = rest
+                .strip_prefix(['E', 'e'])
+                .and_then(|r| r.strip_prefix('\''))
+                .filter(|_| {
+                    !sql[..i].ends_with(|c: char| c.is_alphanumeric() || c == '_' || c == '$')
+                })
+            {
+                let Some(end) = escape_string_end(literal) else {
+                    return false;
+                };
+                i += end + 3;
+                ends_with_semicolon = false;
+            } else if let Some(quote) = rest.chars().next().filter(|c| matches!(c, '\'' | '"')) {
+                // Doubled quotes are treated as adjacent literals or identifiers.
+                let Some(end) = rest[1..].find(quote) else {
+                    return false;
+                };
+                i += end + 2;
+                ends_with_semicolon = false;
+            } else if let Some(tag) = dollar_tag(rest) {
+                let Some(end) = rest[tag.len()..].find(tag) else {
+                    return false;
+                };
+                i += end + tag.len() * 2;
+                ends_with_semicolon = false;
+            } else {
+                let c = rest.chars().next().expect("rest is non-empty");
+                if !c.is_whitespace() {
+                    ends_with_semicolon = c == ';';
+                }
+                i += c.len_utf8();
+            }
+        }
+        ends_with_semicolon
+    }
+}
+
+/// Finds the closing quote of an `E'...'` body, where backslash escapes the next character.
+fn escape_string_end(body: &str) -> Option<usize> {
+    let bytes = body.as_bytes();
+    let mut i = 0;
+    while i < bytes.len() {
+        match bytes[i] {
+            b'\\' => i += 2,
+            b'\'' => return Some(i),
+            _ => i += 1,
+        }
+    }
+    None
+}
+
+/// Matches `$$` or `$tag$`, but not `$1`.
+fn dollar_tag(s: &str) -> Option<&str> {
+    let body = s.strip_prefix('$')?;
+    if body.starts_with(|c: char| c.is_ascii_digit()) {
+        return None;
+    }
+    let end = body.find(|c: char| !(c.is_alphanumeric() || c == '_'))?;
+    (body.as_bytes()[end] == b'$').then(|| &s[..end + 2])
 }

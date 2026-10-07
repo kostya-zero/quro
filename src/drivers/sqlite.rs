@@ -1,3 +1,5 @@
+use std::ffi::CString;
+
 use anyhow::Result;
 use rusqlite::{Connection, Params, types::ValueRef};
 
@@ -21,9 +23,7 @@ impl SqliteDriver {
             ValueRef::Null => "NULL".to_owned(),
             ValueRef::Integer(value) => value.to_string(),
             ValueRef::Real(value) => value.to_string(),
-
             ValueRef::Text(value) => String::from_utf8_lossy(value).into_owned(),
-
             ValueRef::Blob(value) => self.format_blob(value),
         }
     }
@@ -121,5 +121,13 @@ impl Driver for SqliteDriver {
 
     fn execute_query(&mut self, query: &str) -> Result<QueryOutput> {
         self.execute_query_with(query, [])
+    }
+
+    fn is_complete(&self, sql: &str) -> bool {
+        let Ok(sql) = CString::new(sql) else {
+            return true;
+        };
+
+        unsafe { rusqlite::ffi::sqlite3_complete(sql.as_ptr()) != 0 }
     }
 }

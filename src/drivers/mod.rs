@@ -23,6 +23,7 @@ pub trait Driver {
     fn get_tables_schema(&mut self, table: &str) -> Result<QueryOutput>;
     fn name(&self) -> &'static str;
     fn execute_query(&mut self, query: &str) -> Result<QueryOutput>;
+    fn is_complete(&self, sql: &str) -> bool;
 }
 
 pub fn format_database_error(error: &anyhow::Error) -> String {

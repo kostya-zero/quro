@@ -2,13 +2,10 @@ use clap::{ArgAction, Parser};
 
 use crate::drivers::DriverKind;
 
-/// A command-line query runner.
 #[derive(Parser)]
 #[command(
-    name = "quro",
     about = env!("CARGO_PKG_DESCRIPTION"),
-    version = env!("CARGO_PKG_VERSION"),
-
+    version,
 )]
 pub struct Cli {
     /// Database URL to connect to.
